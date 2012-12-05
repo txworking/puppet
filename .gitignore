@@ -12,3 +12,4 @@ doc
 # to work around that.  Which we don't want committed, so we can ignore it here.
 /.rvmrc
 Gemfile.lock
+/.tags*

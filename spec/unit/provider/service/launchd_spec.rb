@@ -60,7 +60,6 @@ describe Puppet::Type.type(:service).provider(:launchd) do
       provider.expects(:get_macosx_version_major).returns("10.6")
       subject.expects(:plist_from_label).returns([joblabel, {"Disabled" => true}])
       provider.expects(:read_plist).returns({joblabel => {"Disabled" => false}})
-      provider.stubs(:launchd_overrides).returns(launchd_overrides)
       FileTest.expects(:file?).with(launchd_overrides).returns(true)
       subject.enabled?.should == :true
     end
@@ -68,7 +67,6 @@ describe Puppet::Type.type(:service).provider(:launchd) do
       provider.expects(:get_macosx_version_major).returns("10.6")
       subject.expects(:plist_from_label).returns([joblabel, {"Disabled" => false}])
       provider.expects(:read_plist).returns({joblabel => {"Disabled" => true}})
-      provider.stubs(:launchd_overrides).returns(launchd_overrides)
       FileTest.expects(:file?).with(launchd_overrides).returns(true)
       subject.enabled?.should == :false
     end
@@ -76,7 +74,6 @@ describe Puppet::Type.type(:service).provider(:launchd) do
       provider.expects(:get_macosx_version_major).returns("10.6")
       subject.expects(:plist_from_label).returns([joblabel, {}])
       provider.expects(:read_plist).returns({})
-      provider.stubs(:launchd_overrides).returns(launchd_overrides)
       FileTest.expects(:file?).with(launchd_overrides).returns(true)
       subject.enabled?.should == :true
     end
@@ -121,6 +118,12 @@ describe Puppet::Type.type(:service).provider(:launchd) do
       subject.expects(:status).returns(:stopped)
       subject.expects(:execute).with([:launchctl, :load, '-w', joblabel])
       subject.start
+    end
+
+    it "(#16271) Should stop and start the service when a restart is called" do
+      subject.expects(:stop)
+      subject.expects(:start)
+      subject.restart
     end
   end
 
@@ -191,7 +194,6 @@ describe Puppet::Type.type(:service).provider(:launchd) do
       resource[:enable] = true
       provider.expects(:get_macosx_version_major).returns("10.6")
       provider.expects(:read_plist).returns({})
-      provider.stubs(:launchd_overrides).returns(launchd_overrides)
       Plist::Emit.expects(:save_plist).once
       subject.enable
     end
@@ -202,7 +204,6 @@ describe Puppet::Type.type(:service).provider(:launchd) do
       resource[:enable] = false
       provider.stubs(:get_macosx_version_major).returns("10.6")
       provider.stubs(:read_plist).returns({})
-      provider.stubs(:launchd_overrides).returns(launchd_overrides)
       Plist::Emit.expects(:save_plist).once
       subject.enable
     end

@@ -11,6 +11,7 @@ describe Puppet::Parser::TypeLoader do
 
   before do
     @loader = Puppet::Parser::TypeLoader.new(:myenv)
+    Puppet.expects(:deprecation_warning).never
   end
 
   it "should support an environment" do
@@ -92,20 +93,6 @@ describe Puppet::Parser::TypeLoader do
       # This will fail if it tries to reimport the file.
       @loader.import("myfile")
     end
-
-    it "checks the type of DSL to import" do
-      Puppet::Parser::Files.expects(:find_manifests).returns ["modname", [make_absolute("/one")]]
-      Puppet::Util::ManifestFiletypeHelper.expects(:is_ruby_filename?).at_least_once.returns false
-
-      @loader.import("myfile")
-    end
-
-    it "evaluates loaded Ruby code" do
-      File.stubs(:read).returns("hostclass(:asdf) {}")
-      Puppet::Parser::Files.stubs(:find_manifests).returns ["modname", [make_absolute("/one.rb")]]
-
-      @loader.import("myfile").map(&:name).should include "asdf"
-    end
   end
 
   describe "when importing all" do
@@ -136,7 +123,7 @@ describe Puppet::Parser::TypeLoader do
 
         # write out the class
         if type == "ruby"
-          File.open(path, "w") { |f| f.print "hostclass :'#{name}' do; end" }
+          File.open(path, "w") { |f| f.print "hostclass '#{name}' do\nend" }
         else
           File.open(path, "w") { |f| f.print "class #{name} {}" }
         end
@@ -160,6 +147,8 @@ describe Puppet::Parser::TypeLoader do
     end
 
     it "should load all ruby manifests from all modules in the specified environment" do
+      Puppet.expects(:deprecation_warning).at_least(1)
+
       @module1 = mk_module(@modulebase1, "one")
       @module2 = mk_module(@modulebase2, "two")
 
